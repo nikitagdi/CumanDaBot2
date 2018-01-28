@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
+using Telegram.Bot;
 using Telegram.Bot.Args;
 using Telegram.Bot.Types;
 using Telegram.Bot.Types.Enums;
@@ -11,11 +12,12 @@ using Telegram.Bot.Types.InlineQueryResults;
 using Telegram.Bot.Types.InputMessageContents;
 using Telegram.Bot.Types.ReplyMarkups;
 
-namespace Telegram.Bot.Examples.Echo
+namespace CumanDaBot2
 {
     public static class Program
     {
         private static readonly TelegramBotClient Bot = new TelegramBotClient("545867962:AAHHBkdDxtlepHrGWtQBTBtxjJ6szG-_cNQ");
+        private static Vote currentVote = new Vote();
 
         public static void Main(string[] args)
         {
@@ -50,8 +52,38 @@ namespace Telegram.Bot.Examples.Echo
 
             IReplyMarkup keyboard = new ReplyKeyboardRemove();
 
-            switch (message.Text.Split(' ').First())
+            switch (message.Text.Split(' ', '@').First())
             {
+                case "/RegVote":
+                    if(currentVote.addVariant(message.From.FirstName))
+                        await Bot.SendTextMessageAsync(
+                        message.Chat.Id,
+                        message.From.FirstName + " успешно зарегистрирован",
+                        replyMarkup: keyboard);
+                    else
+                        await Bot.SendTextMessageAsync(
+                        message.Chat.Id,
+                        message.From.FirstName + "Вы уже зарегистрированы!",
+                        replyMarkup: keyboard);
+                    break;
+                case "/Vote":
+                    InlineKeyboardButton[] buttons = new InlineKeyboardButton[currentVote.Variants.Count];
+                    for (int i = 0; i < currentVote.Variants.Count; i++)
+                        buttons[i] = currentVote.Variants[i];
+
+                    keyboard = new InlineKeyboardMarkup(buttons);
+
+                    await Bot.SendTextMessageAsync(
+                        message.Chat.Id,
+                        "Choose",
+                        replyMarkup: keyboard);
+                    break;
+                case "/Results":
+                    await Bot.SendTextMessageAsync(
+                    message.Chat.Id,
+                    currentVote.getStatsString(),
+                    replyMarkup: keyboard);
+                    break;
                 case "/XYIsize":
                     Random rnd = new Random();
                     int size = rnd.Next(5, 15);
@@ -73,7 +105,10 @@ namespace Telegram.Bot.Examples.Echo
                     break;
                 default:
                     const string usage = @"Usage:
-/XYIsize  - узнать размер болта
+/XYIsize@CumAnDaBot  - узнать размер болта
+/RegVote@CumAnDaBot - Зарегистрироваться для голосования на пидара месяца
+/Vote@CumAnDaBot - Голосовать
+/Results@CumAnDaBot - результаты последнего голосования
 ";
 
                     await Bot.SendTextMessageAsync(
@@ -86,9 +121,28 @@ namespace Telegram.Bot.Examples.Echo
 
         private static async void BotOnCallbackQueryReceived(object sender, CallbackQueryEventArgs callbackQueryEventArgs)
         {
-            await Bot.AnswerCallbackQueryAsync(
-                callbackQueryEventArgs.CallbackQuery.Id,
-                $"Received {callbackQueryEventArgs.CallbackQuery.Data}");
+            try
+            {
+                if (currentVote.vote(callbackQueryEventArgs.CallbackQuery.From.Id, callbackQueryEventArgs.CallbackQuery.Data))
+                    await Bot.AnswerCallbackQueryAsync(
+                        callbackQueryEventArgs.CallbackQuery.Id,
+                        $"Received {callbackQueryEventArgs.CallbackQuery.Data}");
+                else
+                    await Bot.AnswerCallbackQueryAsync(
+                    callbackQueryEventArgs.CallbackQuery.Id,
+                    $"Вы уже проголосовали!");
+            }
+            catch (Exception)
+            {
+                try
+                {
+                    await Bot.AnswerCallbackQueryAsync(
+                    callbackQueryEventArgs.CallbackQuery.Id,
+                    $"Некорректный вариант");
+                }
+                catch (Exception)
+                { }
+            }
         }
 
         private static async void BotOnInlineQueryReceived(object sender, InlineQueryEventArgs inlineQueryEventArgs)
@@ -144,34 +198,3 @@ namespace Telegram.Bot.Examples.Echo
     }
 }
 
-/*using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-
-namespace CumanDaBot2
-{
-    class Program
-    {
-        static async Task TestApiAsync()
-        {
-            var botClient = new Telegram.Bot.TelegramBotClient("545867962:AAHHBkdDxtlepHrGWtQBTBtxjJ6szG-_cNQ");
-            var me = await botClient.GetMeAsync();
-
-            
-
-            //botClient.SendTextMessageAsync()
-
-            System.Console.WriteLine($"Hello! My name is {me.FirstName}");
-        }
-
-
-        static void Main(string[] args)
-        {
-            TestApiAsync();
-            System.Console.ReadLine();
-        }
-    }
-}
-*/
