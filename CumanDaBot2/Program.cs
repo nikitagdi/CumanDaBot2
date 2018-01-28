@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
+using System.Web; // для Http запросов погоды
 using Telegram.Bot.Args;
 using Telegram.Bot.Types;
 using Telegram.Bot.Types.Enums;
@@ -42,6 +43,9 @@ namespace Telegram.Bot.Examples.Echo
 
         public static SortedDictionary<long, int> dickSizes = new SortedDictionary<long, int>();
 
+        public sealed class HttpRequest ;
+
+
         private static async void BotOnMessageReceived(object sender, MessageEventArgs messageEventArgs)
         {
             var message = messageEventArgs.Message;
@@ -72,8 +76,26 @@ namespace Telegram.Bot.Examples.Echo
                         replyMarkup: keyboard);
                     break;
                 default:
+
+                // Погода в Астане
+                case "/weather":
+                    
+
+
+
+
+
+
+
+
+                    await Bot.SendTextMessageAsync(
+                        msg = "-273 C",
+                        replyMarkup: keyboard);
+                    break;
+                //default:
                     const string usage = @"Usage:
 /XYIsize  - узнать размер болта
+/weather  - Погода в Астане
 ";
 
                     await Bot.SendTextMessageAsync(
